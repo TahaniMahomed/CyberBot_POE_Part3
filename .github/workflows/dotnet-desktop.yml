@@ -1,28 +1,24 @@
-name: .NET WPF CI
+name: .NET Desktop Build
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [ "main" ]
   pull_request:
-    branches: [ "master" ]
+    branches: [ "main" ]
 
 jobs:
   build:
-    # Changed from ubuntu-latest to windows-latest
     runs-on: windows-latest
-
     steps:
     - uses: actions/checkout@v4
 
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: '10.0.x' 
+        dotnet-version: 8.0.x
 
     - name: Restore dependencies
       run: dotnet restore
 
     - name: Build
-      run: dotnet build --no-restore --configuration Release
-
- 
+      run: dotnet build --configuration Release --no-restore
