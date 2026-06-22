@@ -1,0 +1,121 @@
+﻿<!-- S-CODE ATTRIBUTION
+TITLE: Microsoft Learn: Grid Class
+AUTHOR: Microsoft WPF Team
+DATE: 13 May 2026
+VERSION: WPF Documentation
+AVAILABLE: https://learn.microsoft.com/en-us/dotnet/api/system.windows.controls.grid
+-->
+
+<!-- S-CODE ATTRIBUTION
+TITLE: WPF Tutorial: The Grid Panel
+AUTHOR: WPF-Tutorial.com
+DATE: 13 May 2026
+VERSION: Tutorial Publication
+AVAILABLE: https://www.wpftutorial.net/Grid.html
+-->
+
+<!-- S-CODE ATTRIBUTION
+TITLE: W3Schools: HTML/XAML Hex Color Picker
+AUTHOR: W3Schools Editorial Team
+DATE: 13 May 2026
+VERSION: Web Reference
+AVAILABLE: https://www.w3schools.com/colors/colors_picker.asp
+-->
+
+<!-- S-CODE ATTRIBUTION
+TITLE: WPF Tutorial: The Border Control
+AUTHOR: WPF-Tutorial.com
+DATE: 13 May 2026
+VERSION: Tutorial Publication
+AVAILABLE: https://www.wpftutorial.net/Border.html
+-->
+
+<!-- S-CODE ATTRIBUTION
+TITLE: Microsoft Learn: ScrollViewer Overview
+AUTHOR: Microsoft WPF Team
+DATE: 13 May 2026
+VERSION: WPF Documentation
+AVAILABLE: https://learn.microsoft.com/en-us/dotnet/api/system.windows.controls.scrollviewer
+-->
+
+<!-- S-CODE ATTRIBUTION
+TITLE: Stack Overflow: Vertical Alignment Bottom for Chat
+AUTHOR: Stack Overflow Contributors
+DATE: 13 May 2026
+VERSION: Community Q&A
+AVAILABLE: https://stackoverflow.com/questions/2091811/vertical-alignment-bottom-for-chat
+-->
+
+<!-- S-CODE ATTRIBUTION
+TITLE: Microsoft Learn: Button.Click Event
+AUTHOR: Microsoft WPF Team
+DATE: 13 May 2026
+VERSION: WPF Documentation
+AVAILABLE: https://learn.microsoft.com/en-us/dotnet/api/system.windows.controls.button.click
+-->
+
+<!-- S-CODE ATTRIBUTION
+TITLE: WPF Tutorial: Textbox KeyDown Event
+AUTHOR: WPF-Tutorial.com
+DATE: 13 May 2026
+VERSION: Tutorial Publication
+AVAILABLE: https://www.wpftutorial.net/TextBox.html
+-->
+
+<Window x:Class="CyberBot_POE.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Aegis-X - Cybersecurity Sentinel" Height="650" Width="450"
+        Background="#0A0A14">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row= "0" CornerRadius="15" BorderThickness="2" Margin="0,0,0,10" Padding="10">
+            <Border.BorderBrush>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                    <GradientStop Color="#00FFFF" Offset="0.0"/>
+                    <GradientStop Color="#BF40BF" Offset="1.0"/>
+                </LinearGradientBrush>
+            </Border.BorderBrush>
+            <TextBlock x:Name="AsciiDisplay" TextAlignment="Center" 
+                       FontFamily="Courier New" FontWeight="Bold" Foreground="#00FFFF">
+                <TextBlock.Effect>
+                    <DropShadowEffect Color="#00FFFF" BlurRadius="10" ShadowDepth="0"/>
+                </TextBlock.Effect>
+            </TextBlock>
+        </Border>
+
+        <ScrollViewer Grid.Row="1" x:Name="MainScrollViewer" VerticalScrollBarVisibility="Auto">
+            <StackPanel x:Name="ChatContainer" VerticalAlignment="Top"/>
+        </ScrollViewer>
+
+        <Grid Grid.Row="2" Margin="0,10,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBox x:Name="UserInputBox" Height="40" Background="#1A1A2E" 
+                     Foreground="White" BorderBrush="#BF40BF" BorderThickness="1.5" 
+                     VerticalContentAlignment="Center" Padding="10,0"
+                     KeyDown="UserInputBox_KeyDown"/>
+
+            <Button Grid.Column="1" Content="SEND" Width="80" Margin="10,0,0,0"
+                    Click="SendButton_Click" Cursor="Hand"
+                    Background="#BF40BF" Foreground="White" FontWeight="Bold">
+                <Button.Resources>
+                    <Style TargetType="Border">
+                        <Setter Property="CornerRadius" Value="8"/>
+                    </Style>
+                </Button.Resources>
+                <Button.Effect>
+                    <DropShadowEffect Color="#BF40BF" BlurRadius="8" ShadowDepth="0"/>
+                </Button.Effect>
+            </Button>
+        </Grid>
+    </Grid>
+</Window>
