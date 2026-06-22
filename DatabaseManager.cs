@@ -69,5 +69,62 @@ namespace CyberBot_POE
 
             return table;
         }
+
+        /// <summary>
+        /// Updates the status of a specific task item by its ID.
+        /// </summary>
+        public bool UpdateTaskStatus(int id, bool isCompleted)
+        {
+            string query = "UPDATE SecurityTasks SET IsCompleted = @IsCompleted WHERE Id = @Id;";
+
+            try
+            {
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                {
+                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@IsCompleted", isCompleted ? 1 : 0);
+                        cmd.Parameters.AddWithValue("@Id", id);
+
+                        conn.Open();
+                        int rowsAffected = cmd.ExecuteNonQuery();
+                        return rowsAffected > 0;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("Database Update Error: " + ex.Message);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Completely deletes a specific task item by its ID.
+        /// </summary>
+        public bool DeleteTask(int id)
+        {
+            string query = "DELETE FROM SecurityTasks WHERE Id = @Id;";
+
+            try
+            {
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                {
+                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@Id", id);
+
+                        conn.Open();
+                        int rowsAffected = cmd.ExecuteNonQuery();
+                        return rowsAffected > 0;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("Database Delete Error: " + ex.Message);
+                return false;
+            }
+        }
     }
 }

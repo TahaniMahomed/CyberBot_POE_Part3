@@ -38,14 +38,6 @@ VERSION: Community Q&A
 AVAILABLE: https://stackoverflow.com/questions/5299273/set-horizontalalignment-in-code-behind
 */
 
-/* S!--CODE ATTRIBUTION
-TITLE: Microsoft Learn: VisualTreeHelper Class
-AUTHOR: Microsoft WPF Team
-DATE: 13 May 2026
-VERSION: WPF Documentation
-AVAILABLE: https://learn.microsoft.com/en-us/dotnet/api/system.windows.media.visualtreehelper
-*/
-
 using System;
 using System.Windows;
 using System.Windows.Controls;
@@ -53,6 +45,7 @@ using System.Windows.Media;
 using System.Windows.Input;
 using System.Media;
 using System.Windows.Media.Effects;
+using System.Data; // Required for working with DataTables
 
 namespace CyberBot_POE
 {
@@ -61,6 +54,9 @@ namespace CyberBot_POE
         // Connecting the UI to our ChatBot backend logic
         private ChatBot myBot = new ChatBot();
         private string botDisplayName = "AEGIS-X";
+
+        // Connecting the layout hooks to our secure local database manager
+        private readonly DatabaseManager db = new DatabaseManager();
 
         // Defining a "Cyberpunk" theme using specific RGB values for a neon look
         private readonly Color AegisCyan = Color.FromRgb(0, 255, 255);
@@ -72,6 +68,8 @@ namespace CyberBot_POE
             InitializeComponent();
             // Starts the initial bot setup and greeting
             LoadTask1Requirements();
+            // Auto-loads any existing tasks directly out of SQL upon startup
+            RefreshTaskGrid();
         }
 
         private void LoadTask1Requirements()
@@ -120,6 +118,89 @@ namespace CyberBot_POE
 
             // Creating the Bot message bubble (Cyan and Aligned Left)
             AddMessage(botDisplayName, response, AegisCyan, HorizontalAlignment.Left);
+
+            // Proactive Refresh Trigger: If the user just added a timeframe response, auto-sync the viewboard
+            if (response.Contains("saved that task"))
+            {
+                RefreshTaskGrid();
+            }
+        }
+
+        // =========================================================================
+        // --- PART 3: TASK HUB BACKEND INTERFACE METHODS ---
+        // =========================================================================
+
+        /// <summary>
+        /// Reads all task rows from the database manager and binds them to the UI DataGrid
+        /// </summary>
+        private void RefreshTaskGrid()
+        {
+            try
+            {
+                DataTable dt = db.GetAllTasks();
+                TasksDataGrid.ItemsSource = dt.DefaultView;
+            }
+            catch (Exception ex)
+            {
+                // FIXED: Changed MessageBoxIcon to MessageBoxImage
+                MessageBox.Show($"Error loading task dashboard records: {ex.Message}", "Database Alert", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+
+        /// <summary>
+        /// Triggered when the user clicks 'REFRESH' manually
+        /// </summary>
+        private void RefreshTasksButton_Click(object sender, RoutedEventArgs e)
+        {
+            RefreshTaskGrid();
+        }
+
+        /// <summary>
+        /// Marks a selected grid row task item as complete inside the persistent database layer
+        /// </summary>
+        private void CompleteTaskButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (TasksDataGrid.SelectedItem is DataRowView selectedRow)
+            {
+                int taskId = Convert.ToInt32(selectedRow["Id"]);
+
+                // NOTE: If your DatabaseManager uses a different name like UpdateTask, change it here!
+                if (db.UpdateTaskStatus(taskId, true))
+                {
+                    RefreshTaskGrid();
+                }
+            }
+            else
+            {
+                MessageBox.Show("Please select a task from the board list first to mark it as complete!", "Action Required", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
+
+        /// <summary>
+        /// Completely deletes a chosen task row from the backend database records
+        /// </summary>
+        private void DeleteTaskButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (TasksDataGrid.SelectedItem is DataRowView selectedRow)
+            {
+                int taskId = Convert.ToInt32(selectedRow["Id"]);
+                string taskTitle = selectedRow["Title"].ToString();
+
+                MessageBoxResult confirm = MessageBox.Show($"Are you sure you want to completely delete the task: \"{taskTitle}\"?", "Confirm Deletion", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+
+                if (confirm == MessageBoxResult.Yes)
+                {
+                    // NOTE: If your DatabaseManager uses a different name like RemoveTask, change it here!
+                    if (db.DeleteTask(taskId))
+                    {
+                        RefreshTaskGrid();
+                    }
+                }
+            }
+            else
+            {
+                MessageBox.Show("Please select a task from the board list first to delete it!", "Action Required", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
         }
 
         // --- DYNAMIC UI GENERATION ---
