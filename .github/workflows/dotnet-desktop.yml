@@ -20,7 +20,7 @@ jobs:
       uses: NuGet/setup-nuget@v1
 
     - name: Restore dependencies
-      run: nuget restore "CyberBot_POE.sln"
+      run: nuget restore CyberBot_POE.sln
 
     - name: Build
-      run: msbuild "CyberBot_POE.sln" /p:Configuration=Release /p:Platform="Any CPU"
+      run: msbuild CyberBot_POE.sln /p:Configuration=Release
