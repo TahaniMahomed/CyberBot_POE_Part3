@@ -13,11 +13,8 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
 
-    - name: Setup MSBuild
-      uses: microsoft/setup-msbuild@v2
-
-    - name: Setup NuGet
-      uses: NuGet/setup-nuget@v1
+    - name: List Files
+      run: dir /s  # This will print all files to the logs so we can see where the .sln is
 
     - name: Restore dependencies
       run: nuget restore CyberBot_POE.sln
