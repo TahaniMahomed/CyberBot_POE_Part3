@@ -39,13 +39,14 @@ AVAILABLE: https://stackoverflow.com/questions/5299273/set-horizontalalignment-i
 */
 
 using System;
+using System.Data; // Required for working with DataTables
+using System.Media;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
 using System.Windows.Input;
-using System.Media;
+using System.Windows.Media;
 using System.Windows.Media.Effects;
-using System.Data; // Required for working with DataTables
+using System.Linq;
 
 namespace CyberBot_POE
 {
@@ -53,6 +54,7 @@ namespace CyberBot_POE
     {
         // Connecting the UI to our ChatBot backend logic
         private ChatBot myBot = new ChatBot();
+        private QuizManager _quizManager = new QuizManager();
         private string botDisplayName = "AEGIS-X";
 
         // Connecting the layout hooks to our secure local database manager
@@ -70,6 +72,118 @@ namespace CyberBot_POE
             LoadTask1Requirements();
             // Auto-loads any existing tasks directly out of SQL upon startup
             RefreshTaskGrid();
+        }
+        // =========================================================================
+        // --- QUIZ INTERFACE METHODS ---
+        // =========================================================================
+
+        // --- QUIZ INTERFACE METHODS ---
+
+        private void Window_Loaded(object sender, RoutedEventArgs e)
+        {
+            ShowStartScreen();
+        }
+
+        private void ShowStartScreen()
+        {
+            QuizButtonContainer.Children.Clear();
+            QuestionDisplay.Text = "Press START to begin the Cybersecurity Quiz";
+
+            Button startBtn = new Button
+            {
+                Content = "START",
+                Background = new SolidColorBrush(UserPurple),
+                Foreground = Brushes.White,
+                Width = 150,
+                Height = 50,
+                FontSize = 18
+            };
+            startBtn.Click += StartQuiz_Click;
+            QuizButtonContainer.Children.Add(startBtn);
+        }
+
+        private void StartQuiz_Click(object sender, RoutedEventArgs e)
+        {
+            _quizManager.ResetQuiz();
+            ShowNextQuestion();
+        }
+
+        private void ShowNextQuestion()
+        {
+            var q = _quizManager.GetNextQuestion();
+            if (q == null) return;
+
+            QuestionDisplay.Text = q.Text;
+            QuizButtonContainer.Children.Clear(); // Clears Start button or previous question
+
+            if (q.Type == QType.Typing)
+            {
+                TextBox answerInput = new TextBox { Name = "QuizTypingBox", Width = 200, Height = 30 };
+                Button submitBtn = new Button { Content = "SUBMIT", Tag = -1, Height = 30, Width = 100 };
+                submitBtn.Click += AnswerButton_Click;
+                QuizButtonContainer.Children.Add(answerInput);
+                QuizButtonContainer.Children.Add(submitBtn);
+            }
+            else
+            {
+                foreach (var option in q.Options)
+                {
+                    Button btn = new Button { Content = option, Width = 150, Height = 30, Margin = new Thickness(5) };
+                    btn.Click += AnswerButton_Click;
+                    QuizButtonContainer.Children.Add(btn);
+                }
+            }
+        }
+
+        private void AnswerButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn)
+            {
+                string userInput = "";
+
+                // Handle Typing vs Button input
+                if (btn.Tag != null && btn.Tag.ToString() == "-1")
+                {
+                    var txt = QuizButtonContainer.Children.OfType<TextBox>().FirstOrDefault();
+                    userInput = txt?.Text.Trim() ?? ""; // .Trim() removes accidental spaces
+
+                    // --- VALIDATION ADDED HERE ---
+                 
+                    if (string.IsNullOrEmpty(userInput))
+                    {
+                        // This creates a native Windows pop-up prompt
+                        MessageBox.Show("Please enter an answer before submitting.", "Input Required", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        return;
+                    }
+                    // -----------------------------
+                }
+                else
+                {
+                    userInput = btn.Content?.ToString() ?? "";
+                }
+
+                bool isCorrect = _quizManager.CheckAnswer(userInput);
+
+                // --- UPDATED FEEDBACK LOGIC ---
+                string feedbackHeader = isCorrect ? "CORRECT!" : "INCORRECT.";
+                string detailedReasoning = _quizManager.GetDetailedFeedback(userInput, isCorrect);
+
+                AddMessage(botDisplayName, $"{feedbackHeader}\n{detailedReasoning}", AegisCyan, HorizontalAlignment.Left);
+                // ------------------------------
+                if (_quizManager.IsGameOver())
+                {
+                    AddMessage(botDisplayName, $"QUIZ OVER. SCORE: {_quizManager.GetScore()}/10. {_quizManager.GetFinalFeedback()}", AegisCyan, HorizontalAlignment.Left);
+                    QuestionDisplay.Text = "Quiz Finished. Press START to try again.";
+
+                    Button startBtn = new Button { Content = "START QUIZ", Height = 40, Width = 150 };
+                    startBtn.Click += StartQuiz_Click;
+                    QuizButtonContainer.Children.Add(startBtn);
+                }
+                else
+                {
+                    ShowNextQuestion();
+                }
+            }
         }
 
         private void LoadTask1Requirements()
@@ -104,22 +218,23 @@ namespace CyberBot_POE
             if (e.Key == Key.Enter) HandleInput();
         }
 
+        // --- SIMPLIFIED MainWindow.xaml.cs ---
         private void HandleInput()
         {
             string input = UserInputBox.Text;
-            if (string.IsNullOrWhiteSpace(input)) return; // Don't send empty messages
+            if (string.IsNullOrWhiteSpace(input)) return;
 
-            // Creating the User message bubble (Purple and Aligned Right)
             AddMessage("You", input, UserPurple, HorizontalAlignment.Right);
             UserInputBox.Clear();
 
-            // Getting the processed response from our ChatBot class
+            // Pass the raw input to the bot; the bot now handles the cleaning
             string response = myBot.HandleUserQuery(input);
 
-            // Creating the Bot message bubble (Cyan and Aligned Left)
-            AddMessage(botDisplayName, response, AegisCyan, HorizontalAlignment.Left);
+            if (!string.IsNullOrWhiteSpace(response))
+            {
+                AddMessage(botDisplayName, response, AegisCyan, HorizontalAlignment.Left);
+            }
 
-            // Proactive Refresh Trigger: If the user just added a timeframe response, auto-sync the viewboard
             if (response.Contains("saved that task"))
             {
                 RefreshTaskGrid();
@@ -164,11 +279,16 @@ namespace CyberBot_POE
             {
                 int taskId = Convert.ToInt32(selectedRow["Id"]);
 
-                // NOTE: If your DatabaseManager uses a different name like UpdateTask, change it here!
+                // --- REPLACE YOUR EXISTING LOGIC WITH THIS BLOCK ---
                 if (db.UpdateTaskStatus(taskId, true))
                 {
                     RefreshTaskGrid();
                 }
+                else
+                {
+                    MessageBox.Show("Could not update task in the database.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+                // ---------------------------------------------------
             }
             else
             {

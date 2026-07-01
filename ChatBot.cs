@@ -65,6 +65,14 @@ namespace CyberBot_POE
 
             string cleanInput = input.ToLower().Trim();
 
+            // Check for Task Intents FIRST
+            if (cleanInput.Contains("add") || cleanInput.Contains("remind") || cleanInput.Contains("task"))
+            {
+                // This keeps your code clean by delegating the logic
+                return HandleTaskIntent(cleanInput, input);
+            }
+
+
             // Setup User Name
             if (isFirstMessage)
             {
@@ -73,33 +81,52 @@ namespace CyberBot_POE
                 return $"Hello {UserName}! I'm Aegis-X, your South African Cybersecurity Sentinel. What would you like to ask me about today?";
             }
 
+
             // =========================================================================
             // --- PART 3: TASK ASSISTANT STATE ENGINE ---
             // =========================================================================
 
             // State B: The user is replying with their reminder preference timeframe
+            // --- REPLACED LOGIC INSIDE HandleUserQuery ---
+
+            // --- REPLACED LOGIC INSIDE HandleUserQuery ---
             if (isWaitingForReminder)
             {
-                string reminderTime = input.Trim(); // Preserve original casing (e.g., "3 days")
+                // 1. Clean the input to get JUST the time (e.g., "2 weeks" or "3 days")
+                string rawInput = input.ToLower();
 
-                // Call our Database Manager to insert the record securely into local storage
+                // Define phrases to remove to isolate the date/time
+                string[] phrasesToRemove = { "yes, remind me in", "remind me in", "yes remind me in", "in" };
+                string reminderTime = input;
+
+                foreach (string phrase in phrasesToRemove)
+                {
+                    if (rawInput.Contains(phrase))
+                    {
+                        reminderTime = rawInput.Replace(phrase, "").Trim();
+                        break;
+                    }
+                }
+                // Clean up any stray punctuation
+                reminderTime = reminderTime.TrimEnd('.', '!', '?');
+
+                // 2. Save only the clean 'reminderTime' string to the database
                 bool success = db.InsertTask(pendingTaskTitle, pendingTaskDescription, reminderTime);
 
-                // Clear the temporary tracking state variables
                 isWaitingForReminder = false;
                 pendingTaskTitle = "";
                 pendingTaskDescription = "";
 
                 if (success)
                 {
-                    return $"Got it! I've saved that task to the database. I'll remind you in: {reminderTime}.";
+                    // 3. Return a clean, professional response to the UI
+                    return $"Got it! I've saved that task. I'll remind you in {reminderTime}.";
                 }
                 else
                 {
-                    return "System Alert: The task details processed correctly, but there was an issue saving to the local SQL database.";
+                    return "System Alert: There was an issue saving the reminder to the database.";
                 }
             }
-
             // State A: Catching the initial command keyword structure to add a new task
             if (cleanInput.StartsWith("add task -"))
             {
@@ -121,6 +148,7 @@ namespace CyberBot_POE
 
                 return $"Task added with the description \"{pendingTaskDescription}\" Would you like a reminder?";
             }
+
 
             // =========================================================================
             // --- EXISTING PART 1 & 2 RESPONSES ---
@@ -275,6 +303,29 @@ namespace CyberBot_POE
                 default:
                     return new List<string> { "Always stay alert and keep your software updated!" };
             }
+        }
+
+        private string HandleTaskIntent(string cleanInput, string originalInput)
+        {
+            // If the user used the specific format "Add task - Name"
+            if (cleanInput.StartsWith("add task -"))
+            {
+                // This is a direct hand-off to your existing logic below!
+                // We return an empty string to signal that the main loop should handle it
+                return "";
+            }
+
+            if (cleanInput.Contains("add") || cleanInput.Contains("task"))
+            {
+                return "I see you want to add a task. Please use the format: 'Add task - [Task Name]'.";
+            }
+
+            if (cleanInput.Contains("remind"))
+            {
+                return "I can help you set a reminder. What should I remind you about?";
+            }
+
+            return "I'm not sure what to do with that task request. Could you rephrase?";
         }
     }
 }
